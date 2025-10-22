@@ -10,7 +10,7 @@ contract HelperConfig is Script{
     NetworkConfig public activeNetworkConfig;
 
     uint8 public constant DECIMALS = 8;
-    uint256 public constant INITIAL_PRICE = 2000e8;
+    int256 public constant INITIAL_PRICE = 2000e8;
 
     struct NetworkConfig{
         address priceFeed;
@@ -23,7 +23,7 @@ contract HelperConfig is Script{
             activeNetworkConfig = getMainEthConfig();
         }
         else {
-            activeNetworkConfig = getAnvilEthConfig();
+            activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
     }
 
@@ -43,14 +43,22 @@ contract HelperConfig is Script{
         return ethConfig;
     }
 
-    function getAnvilEthConfig() public pure returns(NetworkConfig memory){
+    function getOrCreateAnvilEthConfig() public returns(NetworkConfig memory){
+        if(activeNetworkConfig.priceFeed != address(0)){
+            return activeNetworkConfig;
+        }
+
         vm.startBroadcast();
-        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(DECIMALS, INITIAL_PRICE);
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(
+            DECIMALS, 
+            INITIAL_PRICE
+        );
+
         vm.stopBroadcast();
 
         NetworkConfig memory anvilConfig = NetworkConfig({
-            priceFeed: address(mockPriceFeed);
-        })
+            priceFeed: address(mockPriceFeed)
+        });
 
         return anvilConfig;
     }
